@@ -1,19 +1,11 @@
-//
-//  ContentView.swift
-//  HelloXcode
-//
-//  Created by Jesus Abarca on 17/10/26.
-//
-
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Habito.ejemplos) { habito in
+                Text(habito.descripcion())
+            }
         }
         .padding()
     }
