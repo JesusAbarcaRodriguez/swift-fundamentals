@@ -32,6 +32,16 @@ struct Habito: Identifiable {
             completados += 1
         }
     }
+    
+    mutating func reiniciar() {
+        completados = 0
+    }
+    
+    mutating func deshacer() {
+        if completados > 0 {
+            completados -= 1
+        }
+    }
 
     func descripcion() -> String {
         let textoNota = nota ?? "Sin nota"   // ?? = valor si es nil
