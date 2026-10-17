@@ -2,12 +2,17 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(Habito.ejemplos) { habito in
-                Text(habito.descripcion())
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Mis hábitos")
+                    .font(.largeTitle.bold())
+
+                ForEach(Habito.ejemplos) { habito in
+                    HabitoFila(habito: habito)
+                }
             }
+            .padding()
         }
-        .padding()
     }
 }
 
