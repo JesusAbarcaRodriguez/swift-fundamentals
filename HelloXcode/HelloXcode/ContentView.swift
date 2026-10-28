@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var habitos = Habito.ejemplos
     @State private var ocultarCompletados = false
+    @State private var mostrarFormulario = false
 
     private var totalCompletos: Int {
         habitos.filter { $0.estaCompleto }.count
@@ -66,13 +67,25 @@ struct ContentView: View {
             .navigationTitle("Mis hábitos")
             .listStyle(.insetGrouped)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Reiniciar", systemImage: "arrow.counterclockwise") {
                         withAnimation {
                             for i in habitos.indices {
                                 habitos[i].reiniciar()
                             }
                         }
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Nuevo", systemImage: "plus") {
+                        mostrarFormulario = true
+                    }
+                }
+            }
+            .sheet(isPresented: $mostrarFormulario) {
+                NuevoHabitoView { nuevo in
+                    withAnimation {
+                        habitos.append(nuevo)
                     }
                 }
             }
