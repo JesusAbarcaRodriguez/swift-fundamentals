@@ -1,45 +1,55 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var habitos = Habito.ejemplos
+    // Toma el store del entorno (como useContext)
+    @Environment(HabitosStore.self) private var store
+
+    // Estado de la INTERFAZ: se queda aquí porque solo le importa a esta pantalla
     @State private var ocultarCompletados = false
     @State private var mostrarFormulario = false
 
-    private var totalCompletos: Int {
-        habitos.filter { $0.estaCompleto }.count
-    }
-
-    private var todosCompletos: Bool {
-        totalCompletos == habitos.count
-    }
-
     var body: some View {
-        // NavigationStack: permite navegar entre pantallas
+        // @Bindable: permite sacar bindings ($) del store
+        @Bindable var store = store
+
         NavigationStack {
             List {
-                // Sección 1: resumen
                 Section {
-                    Text("Completados: \(totalCompletos) de \(habitos.count)")
+                    Text("Completados: \(store.totalCompletos) de \(store.habitos.count)")
                         .foregroundStyle(.secondary)
+                    
+                    ProgressView(value: store.progresoTotal)
+                        .tint(.green)
 
-                    if todosCompletos {
+                    if store.todosCompletos {
                         Text("¡Día perfecto! 🎉")
                             .font(.title3.bold())
                             .foregroundStyle(.green)
                     }
 
                     Toggle("Ocultar completados", isOn: $ocultarCompletados)
+                    
+                    Button("Completar todo", systemImage: "checkmark.circle") {
+                        withAnimation {
+                            store.completarTodo()
+                        }
+                    }
                 }
 
-                // Sección 2: los hábitos
                 Section("Hábitos") {
-                    ForEach($habitos) { $habito in
+                    if store.habitos.isEmpty {
+                        ContentUnavailableView(
+                            "Sin hábitos",
+                            systemImage: "list.bullet.clipboard",
+                            description: Text("Toca + para crear tu primer hábito")
+                        )
+                    }
+                    ForEach($store.habitos) { $habito in
                         if !(ocultarCompletados && habito.estaCompleto) {
-                            // NavigationLink: al tocarlo, abre otra pantalla
                             NavigationLink {
-                                HabitoDetalle(habito: $habito)   // destino
+                                HabitoDetalle(habito: $habito)
                             } label: {
-                                HabitoFila(habito: habito)       // lo que se ve en la lista
+                                HabitoFila(habito: habito)
                             }
                             .badge(habito.faltan)
                             // Deslizar hacia la derecha →
@@ -53,6 +63,11 @@ struct ContentView: View {
                             }
                             // Deslizar hacia la izquierda ←
                             .swipeActions(edge: .trailing) {
+                                Button("Eliminar", systemImage: "trash", role: .destructive) {
+                                    withAnimation {
+                                        store.eliminar(habito)
+                                    }
+                                }
                                 Button("Deshacer", systemImage: "arrow.uturn.backward") {
                                     withAnimation {
                                         habito.deshacer()
@@ -70,9 +85,7 @@ struct ContentView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Reiniciar", systemImage: "arrow.counterclockwise") {
                         withAnimation {
-                            for i in habitos.indices {
-                                habitos[i].reiniciar()
-                            }
+                            store.reiniciarTodo()
                         }
                     }
                 }
@@ -83,11 +96,7 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $mostrarFormulario) {
-                NuevoHabitoView { nuevo in
-                    withAnimation {
-                        habitos.append(nuevo)
-                    }
-                }
+                NuevoHabitoView()   // ya no necesita callback, usa el store directamente
             }
         }
     }
@@ -95,4 +104,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environment(HabitosStore())   // ⚠️ el Preview también necesita su store
 }

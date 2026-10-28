@@ -1,11 +1,10 @@
 import SwiftUI
 
 struct NuevoHabitoView: View {
+    
+    @Environment(HabitosStore.self) private var store
     // dismiss: función que cierra esta hoja
     @Environment(\.dismiss) private var dismiss
-
-    // Callback: la vista padre decide qué hacer con el hábito nuevo
-    let onGuardar: (Habito) -> Void
 
     // Estado del formulario (cada campo tiene su @State)
     @State private var nombre = ""
@@ -23,10 +22,7 @@ struct NuevoHabitoView: View {
     private var nombreValido: Bool {
         !nombre.trimmingCharacters(in: .whitespaces).isEmpty
     }
-    
-    private var notaValida: Bool {
-        !nota.trimmingCharacters(in: .whitespaces).isEmpty
-    }
+
 
     var body: some View {
         NavigationStack {
@@ -47,11 +43,6 @@ struct NuevoHabitoView: View {
                             .foregroundStyle(.red)
                     }
                     TextField("Nota (opcional)", text: $nota)
-                    if !notaValida {
-                        Text("La nota es obligatoria")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    }
                 }
 
                 Section("Frecuencia y meta") {
@@ -111,13 +102,14 @@ struct NuevoHabitoView: View {
             nota: notaLimpia.isEmpty ? nil : notaLimpia
         )
 
-        onGuardar(nuevo)   // le entrega el hábito al padre
+        withAnimation {
+            store.agregar(nuevo)
+        }
         dismiss()          // cierra la hoja
     }
 }
 
 #Preview {
-    NuevoHabitoView { habito in
-        print("Guardado:", habito.nombre)
-    }
+    NuevoHabitoView()
+        .environment(HabitosStore())
 }
