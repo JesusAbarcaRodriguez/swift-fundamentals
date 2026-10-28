@@ -1,71 +1,94 @@
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
-    // Toma el store del entorno (como useContext)
-    @Environment(HabitosStore.self) private var store
+    // @Query: lee los hábitos de la base de datos y redibuja la vista
+    // sola cuando cambian (como un useLiveQuery).
+    @Query(sort: \Habito.fechaCreacion) private var habitos: [Habito]
 
-    // Estado de la INTERFAZ: se queda aquí porque solo le importa a esta pantalla
+    // modelContext: la "conexión" para insertar y borrar
+    @Environment(\.modelContext) private var context
+
     @State private var ocultarCompletados = false
     @State private var mostrarFormulario = false
 
-    var body: some View {
-        // @Bindable: permite sacar bindings ($) del store
-        @Bindable var store = store
+    // Lo que antes calculaba el store, ahora vive aquí
+    private var totalCompletos: Int {
+        habitos.filter { $0.estaCompleto }.count
+    }
 
+    private var todosCompletos: Bool {
+        !habitos.isEmpty && totalCompletos == habitos.count
+    }
+
+    private var progresoTotal: Double {
+        guard !habitos.isEmpty else { return 0 }
+        return Double(totalCompletos) / Double(habitos.count)
+    }
+
+    var body: some View {
         NavigationStack {
             List {
                 Section {
-                    Text("Completados: \(store.totalCompletos) de \(store.habitos.count)")
+                    Text("Completados: \(totalCompletos) de \(habitos.count)")
                         .foregroundStyle(.secondary)
-                    
-                    ProgressView(value: store.progresoTotal)
+
+                    ProgressView(value: progresoTotal)
                         .tint(.green)
 
-                    if store.todosCompletos {
+                    if todosCompletos {
                         Text("¡Día perfecto! 🎉")
                             .font(.title3.bold())
                             .foregroundStyle(.green)
                     }
 
                     Toggle("Ocultar completados", isOn: $ocultarCompletados)
-                    
+
                     Button("Completar todo", systemImage: "checkmark.circle") {
                         withAnimation {
-                            store.completarTodo()
+                            completarTodo()
                         }
                     }
                 }
 
                 Section("Hábitos") {
-                    if store.habitos.isEmpty {
-                        ContentUnavailableView(
-                            "Sin hábitos",
-                            systemImage: "list.bullet.clipboard",
-                            description: Text("Toca + para crear tu primer hábito")
-                        )
+                    if habitos.isEmpty {
+                        // Esta forma de ContentUnavailableView tiene 3 bloques:
+                        // el título, la descripción y las acciones (botones)
+                        ContentUnavailableView {
+                            Label("Sin hábitos", systemImage: "list.bullet.clipboard")
+                        } description: {
+                            Text("Toca + para crear tu primer hábito")
+                        } actions: {
+                            Button("Cargar ejemplos", systemImage: "sparkles") {
+                                withAnimation {
+                                    cargarEjemplos()
+                                }
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
                     }
-                    ForEach($store.habitos) { $habito in
+                    // Ya no hay $: cada habito es una referencia al objeto real
+                    ForEach(habitos) { habito in
                         if !(ocultarCompletados && habito.estaCompleto) {
                             NavigationLink {
-                                HabitoDetalle(habito: $habito)
+                                HabitoDetalle(habito: habito)
                             } label: {
                                 HabitoFila(habito: habito)
                             }
                             .badge(habito.faltan)
-                            // Deslizar hacia la derecha →
                             .swipeActions(edge: .leading) {
                                 Button("Hecho", systemImage: "checkmark") {
                                     withAnimation(.bouncy) {
-                                        habito.marcarHecho()
+                                        habito.marcarHecho()   // se guarda solo
                                     }
                                 }
                                 .tint(.green)
                             }
-                            // Deslizar hacia la izquierda ←
                             .swipeActions(edge: .trailing) {
                                 Button("Eliminar", systemImage: "trash", role: .destructive) {
                                     withAnimation {
-                                        store.eliminar(habito)
+                                        context.delete(habito)   // lo borra de la base de datos
                                     }
                                 }
                                 Button("Deshacer", systemImage: "arrow.uturn.backward") {
@@ -85,7 +108,7 @@ struct ContentView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Reiniciar", systemImage: "arrow.counterclockwise") {
                         withAnimation {
-                            store.reiniciarTodo()
+                            reiniciarTodo()
                         }
                     }
                 }
@@ -96,13 +119,34 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $mostrarFormulario) {
-                NuevoHabitoView()   // ya no necesita callback, usa el store directamente
+                NuevoHabitoView()
             }
+        }
+    }
+
+    // Acciones (antes estaban en el store)
+    private func reiniciarTodo() {
+        for habito in habitos {
+            habito.reiniciar()
+        }
+    }
+
+    private func completarTodo() {
+        for habito in habitos {
+            habito.completados = habito.meta
+        }
+    }
+    
+    
+    private func cargarEjemplos() {
+        // Habito.ejemplos crea 3 hábitos nuevos cada vez que lo lees
+        for habito in Habito.ejemplos {
+            context.insert(habito)
         }
     }
 }
 
 #Preview {
     ContentView()
-        .environment(HabitosStore())   // ⚠️ el Preview también necesita su store
+        .modelContainer(.preview)   // base de datos de mentira con los 3 ejemplos
 }

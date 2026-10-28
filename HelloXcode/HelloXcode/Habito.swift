@@ -1,22 +1,44 @@
 import Foundation
+import SwiftData
 
-// enum: un tipo con opciones fijas
-enum Frecuencia: String, CaseIterable {
+// Codable: SwiftData necesita saber cómo convertir el enum para guardarlo en disco
+enum Frecuencia: String, CaseIterable, Codable {
     case diaria = "Diaria"
     case semanal = "Semanal"
 }
 
-// struct: un "molde" para crear datos
-struct Habito: Identifiable {
-    let id = UUID()            // let = constante, nunca cambia
-    var nombre: String         // var = variable, puede cambiar
+// @Model: SwiftData guarda esta clase en una base de datos.
+// Tiene que ser class (no struct). final = ninguna otra clase puede heredar de ella.
+// Ya no ponemos "id": @Model le da uno automáticamente (y la hace Identifiable).
+@Model
+final class Habito {
+    var nombre: String
     var icono: String
     var frecuencia: Frecuencia
     var meta: Int
-    var completados: Int = 0   // valor por defecto
-    var nota: String?          // ? = opcional, puede ser nil (vacío)
+    var completados: Int = 0
+    var nota: String?
+    var fechaCreacion: Date = Date.now   // nuevo: para ordenar la lista
 
-    // Propiedad calculada: se calcula cada vez que la lees
+    // Las clases necesitan un init escrito a mano (los structs lo generaban solos)
+    init(
+        nombre: String,
+        icono: String,
+        frecuencia: Frecuencia,
+        meta: Int,
+        completados: Int = 0,
+        nota: String? = nil
+    ) {
+        self.nombre = nombre
+        self.icono = icono
+        self.frecuencia = frecuencia
+        self.meta = meta
+        self.completados = completados
+        self.nota = nota
+        self.fechaCreacion = .now
+    }
+
+    // Propiedades calculadas: igual que antes
     var progreso: Double {
         guard meta > 0 else { return 0 }
         return min(Double(completados) / Double(meta), 1.0)
@@ -25,39 +47,43 @@ struct Habito: Identifiable {
     var estaCompleto: Bool {
         completados >= meta
     }
-    
+
     var faltan: Int {
         max(meta - completados, 0)
     }
 
-    // mutating: la función puede modificar el struct
-    mutating func marcarHecho() {
+    // Sin "mutating": en una class los métodos pueden cambiar propiedades directamente
+    func marcarHecho() {
         if !estaCompleto {
             completados += 1
         }
     }
-    
-    mutating func reiniciar() {
+
+    func reiniciar() {
         completados = 0
     }
-    
-    mutating func deshacer() {
+
+    func deshacer() {
         if completados > 0 {
             completados -= 1
         }
     }
 
     func descripcion() -> String {
-        let textoNota = nota ?? "Sin nota"   // ?? = valor si es nil
+        let textoNota = nota ?? "Sin nota"
         return "\(nombre) (\(frecuencia.rawValue)): \(completados)/\(meta) · \(textoNota)"
     }
 }
 
-// extension: agrega cosas a un tipo que ya existe
 extension Habito {
-    static let ejemplos: [Habito] = [
-        Habito(nombre: "Leer", icono: "book", frecuencia: .diaria, meta: 1, nota: "10 páginas"),
-        Habito(nombre: "Ejercicio", icono: "figure.run", frecuencia: .semanal, meta: 3),
-        Habito(nombre: "Tomar agua", icono: "drop", frecuencia: .diaria, meta: 8, completados: 5)
-    ]
+    // "static var { }" en vez de "static let =":
+    // crea hábitos NUEVOS cada vez que lo lees. Un mismo objeto
+    // no puede meterse en dos bases de datos distintas (por ejemplo, en dos Previews).
+    static var ejemplos: [Habito] {
+        [
+            Habito(nombre: "Leer", icono: "book", frecuencia: .diaria, meta: 1, nota: "10 páginas"),
+            Habito(nombre: "Ejercicio", icono: "figure.run", frecuencia: .semanal, meta: 3),
+            Habito(nombre: "Tomar agua", icono: "drop", frecuencia: .diaria, meta: 8, completados: 5)
+        ]
+    }
 }

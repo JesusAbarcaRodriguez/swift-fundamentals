@@ -1,8 +1,8 @@
 import SwiftUI
-
+import SwiftData
 struct NuevoHabitoView: View {
     
-    @Environment(HabitosStore.self) private var store
+    @Environment(\.modelContext) private var context
     // dismiss: función que cierra esta hoja
     @Environment(\.dismiss) private var dismiss
 
@@ -103,7 +103,7 @@ struct NuevoHabitoView: View {
         )
 
         withAnimation {
-            store.agregar(nuevo)
+            context.insert(nuevo)   // lo mete en la base de datos
         }
         dismiss()          // cierra la hoja
     }
@@ -111,5 +111,5 @@ struct NuevoHabitoView: View {
 
 #Preview {
     NuevoHabitoView()
-        .environment(HabitosStore())
+        .modelContainer(.preview)
 }

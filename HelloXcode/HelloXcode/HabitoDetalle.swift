@@ -1,9 +1,9 @@
 import SwiftUI
-
+import SwiftData
 struct HabitoDetalle: View {
-    // @Binding: NO es una copia, es una conexión al hábito original.
-    // Si lo cambias aquí, también cambia en la lista.
-    @Binding var habito: Habito
+    // @Bindable: nos deja sacar bindings ($habito.nombre) de un objeto @Model.
+    // Es lo mismo que hicimos con el store en la Lección 6.
+    @Bindable var habito: Habito
 
     var body: some View {
         VStack(spacing: 24) {
@@ -15,10 +15,18 @@ struct HabitoDetalle: View {
                 .background(habito.estaCompleto ? Color.green : Color.blue)
                 .clipShape(Circle())
 
-            Text(habito.nombre)
+            // $habito.nombre: el campo escribe directo en el hábito guardado
+            TextField("Nombre", text: $habito.nombre)
                 .font(.largeTitle.bold())
+                .multilineTextAlignment(.center)
+                .textFieldStyle(.roundedBorder)
 
             Text(habito.frecuencia.rawValue)
+                .foregroundStyle(.secondary)
+
+            // .formatted: convierte la fecha en texto legible ("27 oct 2026")
+            Text("Creado el \(habito.fechaCreacion.formatted(date: .abbreviated, time: .omitted))")
+                .font(.caption)
                 .foregroundStyle(.secondary)
 
             // Barra de progreso con etiquetas
@@ -76,6 +84,7 @@ struct HabitoDetalle: View {
 
 #Preview {
     NavigationStack {
-        HabitoDetalle(habito: .constant(Habito.ejemplos[0]))
+        HabitoDetalle(habito: Habito.ejemplos[0])
     }
+    .modelContainer(.preview)
 }

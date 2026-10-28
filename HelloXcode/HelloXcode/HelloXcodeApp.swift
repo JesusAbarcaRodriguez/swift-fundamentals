@@ -1,14 +1,14 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct HelloXcodeApp: App {
-    // El store se crea UNA sola vez, aquí
-    @State private var store = HabitosStore()
-
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(store)   // ← como un <Provider> en React
         }
+        // Crea (o abre) la base de datos y la comparte con todas las vistas.
+        // Reemplaza a nuestro antiguo .environment(store)
+        .modelContainer(for: Habito.self)
     }
 }
