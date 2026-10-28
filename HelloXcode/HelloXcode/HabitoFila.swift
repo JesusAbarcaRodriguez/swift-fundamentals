@@ -30,9 +30,6 @@ struct HabitoFila: View {
                 .font(.subheadline.monospacedDigit())
                 .foregroundStyle(.secondary)
         }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 

@@ -1,67 +1,81 @@
 import SwiftUI
 
 struct ContentView: View {
-    // @State: datos que la vista "recuerda" y que, al cambiar, redibujan la pantalla
     @State private var habitos = Habito.ejemplos
     @State private var ocultarCompletados = false
 
-    // Propiedad calculada: cuenta los hábitos completos
     private var totalCompletos: Int {
         habitos.filter { $0.estaCompleto }.count
     }
-    
+
     private var todosCompletos: Bool {
         totalCompletos == habitos.count
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Mis hábitos")
-                    .font(.largeTitle.bold())
+        // NavigationStack: permite navegar entre pantallas
+        NavigationStack {
+            List {
+                // Sección 1: resumen
+                Section {
+                    Text("Completados: \(totalCompletos) de \(habitos.count)")
+                        .foregroundStyle(.secondary)
 
-                Text("Completados: \(totalCompletos) de \(habitos.count)")
-                    .foregroundStyle(.secondary)
-                
-                if todosCompletos {
-                    Text("¡Día perfecto! 🎉")
-                        .font(.title2.bold())
-                        .foregroundStyle(.green)
+                    if todosCompletos {
+                        Text("¡Día perfecto! 🎉")
+                            .font(.title3.bold())
+                            .foregroundStyle(.green)
+                    }
+
+                    Toggle("Ocultar completados", isOn: $ocultarCompletados)
                 }
 
-                Toggle("Ocultar completados", isOn: $ocultarCompletados)
-
-                ForEach($habitos) { $habito in
-                    if !(ocultarCompletados && habito.estaCompleto) {
-                        Button {
-                            withAnimation(.bouncy) {
-                                habito.marcarHecho()
+                // Sección 2: los hábitos
+                Section("Hábitos") {
+                    ForEach($habitos) { $habito in
+                        if !(ocultarCompletados && habito.estaCompleto) {
+                            // NavigationLink: al tocarlo, abre otra pantalla
+                            NavigationLink {
+                                HabitoDetalle(habito: $habito)   // destino
+                            } label: {
+                                HabitoFila(habito: habito)       // lo que se ve en la lista
                             }
-                        } label: {
-                            HabitoFila(habito: habito)
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button("Deshacer", systemImage: "arrow.uturn.backward") {
-                                withAnimation {
-                                    habito.deshacer()
+                            .badge(habito.faltan)
+                            // Deslizar hacia la derecha →
+                            .swipeActions(edge: .leading) {
+                                Button("Hecho", systemImage: "checkmark") {
+                                    withAnimation(.bouncy) {
+                                        habito.marcarHecho()
+                                    }
                                 }
+                                .tint(.green)
+                            }
+                            // Deslizar hacia la izquierda ←
+                            .swipeActions(edge: .trailing) {
+                                Button("Deshacer", systemImage: "arrow.uturn.backward") {
+                                    withAnimation {
+                                        habito.deshacer()
+                                    }
+                                }
+                                .tint(.orange)
                             }
                         }
                     }
                 }
-
-                Button("Reiniciar todo", role: .destructive) {
-                    withAnimation {
-                        for i in habitos.indices {
-                            habitos[i].reiniciar()
+            }
+            .navigationTitle("Mis hábitos")
+            .listStyle(.insetGrouped)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Reiniciar", systemImage: "arrow.counterclockwise") {
+                        withAnimation {
+                            for i in habitos.indices {
+                                habitos[i].reiniciar()
+                            }
                         }
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.top)
             }
-            .padding()
         }
     }
 }

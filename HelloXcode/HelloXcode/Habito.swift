@@ -25,6 +25,10 @@ struct Habito: Identifiable {
     var estaCompleto: Bool {
         completados >= meta
     }
+    
+    var faltan: Int {
+        max(meta - completados, 0)
+    }
 
     // mutating: la función puede modificar el struct
     mutating func marcarHecho() {
