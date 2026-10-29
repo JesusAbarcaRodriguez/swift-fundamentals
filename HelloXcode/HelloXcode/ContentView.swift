@@ -29,6 +29,9 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section("Frase del día") {
+                                    FraseDelDiaView()
+                                }
                 Section {
                     Text("Completados: \(totalCompletos) de \(habitos.count)")
                         .foregroundStyle(.secondary)
@@ -105,6 +108,13 @@ struct ContentView: View {
             .navigationTitle("Mis hábitos")
             .listStyle(.insetGrouped)
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        IdeasView()
+                    } label: {
+                        Label("Ideas", systemImage: "lightbulb")
+                    }
+                }
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Reiniciar", systemImage: "arrow.counterclockwise") {
                         withAnimation {
